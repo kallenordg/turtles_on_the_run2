@@ -1,36 +1,118 @@
 from turtle import Turtle, Screen
 import random
+# Importerar andras moduler som används
 
-race_active = False
 screen = Screen()
-screen.setup(width=500, height=400)
-turtle_bet = screen.textinput(title="Make your bet!", prompt="A bunch of turtles are in a race.\nThere is a red, an orange, a yellow, a green, a blue and a purple turtle.\nWhich turtle do you think will win? Enter a colour: ")
+screen.setup(width=500, height=400)  # Tar fram en 500x400 pixlar skärm
+screen.bgpic(picname='RaceTrack.png')
+y_positions = (-100, -60, -20, 20, 60, 100)  # Variabel för sköldpaddornas position i y-planet
 
-colours = ["red", "orange", "yellow", "green", "blue", "purple"]
-y_positions = (-100, -60, -20, 20, 60, 100)
-all_turtles = []
 
-for turtle_index in range(0, 6):
-    new_turtle = Turtle(shape="turtle")
-    new_turtle.color(colours[turtle_index])
-    new_turtle.penup()
-    new_turtle.goto(x=-200, y=(y_positions[turtle_index]))
-    all_turtles.append(new_turtle)
+def menu():  # Meny slinga, låter en välja en eller två spelare eller att avsluta
+    menu_loop = True
+    while menu_loop:
+        start_input = screen.textinput(title="TurtleRun",
+                                       prompt="{1} ONE PLAYER\n{2} TWO PLAYERS\n{q} QUIT\nEnter selection:")
+        if start_input == "1":  # ONE PLAYER
+            new_race("one")
+            menu_loop = False
+        elif start_input == "2":  # TWO PLAYERS
+            new_race("two")
+            menu_loop = False
+        elif start_input == "q":  # QUIT
+            menu_loop = False
 
-if turtle_bet:
-    race_active = True
 
-while race_active:
+def new_turtles():  # Returnerar lista på sköldpaddor
+    all_turtles = []  # Sätter upp en lokal variabel för alla sköldpaddor
+    colours = ["red", "orange", "yellow", "green", "blue", "purple"]  # Gör lista för färger
+    random.shuffle(colours)  # Blandar runt elementen i färg-listan
+    for turtle_index in range(0, 6):
+        new_turtle = Turtle(shape="turtle")  # Lokal variabel åt ny sköldpadda får Turtle() klassen med sköldpaddsform
+        new_turtle.color(colours[turtle_index])  # Dens färg sätts som den från färg-listan med motsvarande index
+        new_turtle.penup()  # Den ritas på skärmen utan spår från penna
+        new_turtle.goto(x=-200, y=(y_positions[turtle_index]))  # Den flyttas till startposition motsvarande index
+        # Koordinaterna räknas så mitten av skärmen är (0, 0)
+        all_turtles.append(new_turtle)  # Den läggs till i listan av alla sköldpaddor
+    return all_turtles
+
+
+def used_colours(all_turtles):  # Returnerar sträng av använda färger
+    colours = []
     for turtle in all_turtles:
-        if turtle.xcor() > 230:
-            race_active = False
-            winning_colour = turtle.pencolor()
-            if winning_colour == turtle_bet:
-                print(f"You win! The {winning_colour} turtle is the winner.")
-            else:
-                print(f"You lose. The {winning_colour} turtle is the winner.")
+        colours.append(turtle.pencolor())
+    return colours
 
-        rand_distance = random.randint(0, 10)
-        turtle.forward(rand_distance)
 
-screen.exitonclick()
+def text_bunch_of_turtles(all_turtles):  # Returnerar sträng där racet introduceras med sköldpaddornas färger i ordning
+    turtle_bunch = "A bunch of turtles are in a race.\nThey're "
+    for turtle_index in range(0, 5):
+        if turtle_index < 4:
+            turtle_bunch = f"{turtle_bunch}{all_turtles[turtle_index].pencolor()}, "
+        else:
+            turtle_bunch = f"{turtle_bunch}{all_turtles[turtle_index].pencolor()}"
+            turtle_bunch = f"{turtle_bunch} and {all_turtles[turtle_index + 1].pencolor()}."
+    return turtle_bunch
+
+
+def show_text(text_to_show):  # Visar texten från sträng som används som argument
+    text = Turtle()  # Skapar ett Turtle objekt åt text
+    text.hideturtle()  # Gör så att formen av objektet inte visas
+    text.penup()  # Gör så att det inte lämnar en linje när det rör på sig
+    text.setposition(-240, 150)  # Sätter positionen för texten
+    text.write(arg=text_to_show, font=('OpenSans', 16, 'normal'))  # Visar texten
+    return text
+
+
+def new_race(players):
+    all_turtles = new_turtles()  # Skapar lista med nya sköldpaddor genom funktionen new_turtles()
+    start_text = show_text(text_bunch_of_turtles(all_turtles))
+    if players == "one":
+        while True:
+            turtle_bet_1 = screen.textinput(title="Make your bet!",
+                                            prompt="Which turtle do you think will win? Enter a colour: ")
+            if turtle_bet_1 in used_colours(all_turtles):
+                turtle_bet_2 = None
+                break
+    else:
+        while True:
+            turtle_bet_1 = screen.textinput(title="Make your bet, player one!",
+                                            prompt="Which turtle do you think will win? Enter a colour: ")
+            if turtle_bet_1 in used_colours(all_turtles):
+                break
+        while True:
+            turtle_bet_2 = screen.textinput(title="Make your bet, player two!",
+                                            prompt="Which turtle do you think will win? Enter a colour: ")
+            if turtle_bet_2 in used_colours(all_turtles):
+                break
+    start_text.clear()
+    race_active = True  # Variabel sätt för när racet är aktivt
+    while race_active:  # Medan racet är aktivt:
+        for turtle in all_turtles:  # För varje av alla sköldpaddor:
+            if turtle.xcor() > 230:  # Om dens x-koordinat är över 230...
+                race_active = False  # ...är racet inte längre aktivt.
+                winning_colour = turtle.pencolor()  # Variabel görs ät färgen på vinnande sköldpaddan
+                winner = f"The {winning_colour} turtle is the winner.\n"
+                if players == "one":
+                    if winning_colour == turtle_bet_1:
+                        winning_text = f"{winner}You win!"
+                    else:
+                        winning_text = f"{winner}You lose."
+                else:
+                    if winning_colour == turtle_bet_1 or winning_colour == turtle_bet_2:
+                        if winning_colour == turtle_bet_1 and winning_colour == turtle_bet_2:
+                            winning_text = f"{winner}You both win!"
+                        elif winning_colour == turtle_bet_1:
+                            winning_text = f"{winner}Player one wins!"
+                        else:
+                            winning_text = f"{winner}Player two wins!"
+                    else:
+                        winning_text = f"{winner}You both lose."
+                show_text(winning_text)
+                break
+            rand_distance = random.randint(0, 10)
+            turtle.forward(rand_distance)  # Sköldpaddan rör sig framåt i racet en slumputvald längd
+
+
+menu()
+screen.exitonclick()  # Efter menyn slingan kan man stänga av skärmen genom att klicka på den
